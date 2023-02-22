@@ -7,13 +7,22 @@ const registration = async (req, res, next) => {
     const salt = bcrypt.genSaltSync(10);
     const hash = bcrypt.hashSync(req.body.password, salt);
 
+    const token = jwt.sign(
+      {id: req.body._id, isAdmin: req.body.isAdmin},
+      process.env.JWT
+    );
+
     const newUser = new User({
       ...req.body,
       password: hash,
+      token: token
     });
 
-    await newUser.save();
-    res.status(200).send('User has been created!')
+    const savedUser = await newUser.save();
+
+    const {password, isAdmin, ...otherDetails} = savedUser._doc;
+
+    res.status(201).json({ details: { ...otherDetails, token }, isAdmin });
   } catch (err) {
     next(err)
   }
